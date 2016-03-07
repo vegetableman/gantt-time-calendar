@@ -1,0 +1,20 @@
+{
+  "name": "gantt-time-calendar",
+  "version": "1.0.0",
+  "description": "Gantt-like Time Calendar",
+  "main": "index.js",
+  "scripts": {
+    "start": "budo example/browser.js:bundle.js --live  --dir example --verbose -- -t babelify | garnish"
+  },
+  "author": "vegetableman <vegetablebot@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "main-loop": "^3.2.0",
+    "virtual-dom": "^2.1.1"
+  },
+  "devDependencies": {
+    "babelify": "^6.0.2",
+    "budo": "^4.0.0",
+    "garnish": "^5.0.1"
+  }
+}

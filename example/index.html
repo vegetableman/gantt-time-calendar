@@ -1,0 +1,95 @@
+<head>
+    <style type="text/css">
+        * {
+            box-sizing: content-box;
+        }
+        .calendar {
+            border: 1px solid #ddd;
+            width: 800px;
+            margin: 0 auto;
+        }
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+        th {
+            padding-left: 10px;
+            text-align: left;
+        }
+        td, th {
+            border-style: solid;
+            border-width: 1px;
+            border-color: #ddd;
+            border-bottom: 0;
+            border-top: 0;
+            padding: 0;
+            vertical-align: top;
+        }
+        .res-row {
+            border-left: 0px;
+            border-bottom: 1px solid #DDD;
+        }
+        .res-row:last-child {
+            border-bottom: 0;
+        }
+        .res-row > td {
+            border-right: 0;
+            border-left: 0;
+            padding: 10px 40px;
+            text-align: center;
+        }
+        .divider {
+            background: #DDD;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        .no-scroll::-webkit-scrollbar {
+            width:0;
+            height:0
+        }
+        .row {
+            border-bottom: 1px solid #ddd;
+        }
+        .row:last-child {
+            border-bottom: 0;
+        }
+        .row-content {
+            position: relative;
+        }
+        .conference {
+            background: #4682B4;
+            height: 100%;
+            position: absolute;
+            z-index: 2;
+        }
+        .major {
+            border-width: 0 1px;
+            border-style: solid;
+            border-right-width: 0;
+        }
+        .major:first-child {
+            border-left: 0;
+        }
+        .major:last-child {
+            border-right: 0;
+        }
+        .minor {
+            border-style: dotted;
+            border-right-width: 0px;
+            border-width: 0 1px;
+        }
+        .head {
+            border-right: 1px solid #DDD;
+        }
+        .head:last-child {
+            border-right: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar"></div>
+    <script type="text/javascript" src="bundle.js"></script>
+</body>
