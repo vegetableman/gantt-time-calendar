@@ -93,9 +93,16 @@
         .head:last-child {
             border-right: 0;
         }
+        .search-container {
+            margin: 0 auto;
+            width: 802px;
+        }
     </style>
 </head>
 <body>
     <div class="calendar"></div>
+    <div class="search-container">
+        <input type="search" placeholder="Search" oninput="onSearch(this)"/>
+    </div>
     <script type="text/javascript" src="bundle.js"></script>
 </body>

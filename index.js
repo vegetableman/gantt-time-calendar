@@ -43,6 +43,12 @@ export class GanttTimeCalendar {
         target.appendChild(this.loop.target);
     }
 
+    update(state) {
+        this.state = state;
+        this.rightColScrollWidth = 0;
+        this.loop.update(state);
+    }
+
     renderHeader() {
         let ths = [];
         let cols = [];
