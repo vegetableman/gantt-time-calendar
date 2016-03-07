@@ -133,7 +133,7 @@ export class GanttTimeCalendar {
                                 left: startPosition + 'px',
                                 width: (endPosition - startPosition) + 'px',
                                 top: 0
-                            }}, resources[name].conference)
+                            }}, r.conference_name)
                         );
                     });
                 }
