@@ -13,12 +13,13 @@ export class GanttTimeCalendar {
         startTime = 8,
         endTime = 20,
         interval = 30,
-        colWidth = '80px',
+        colWidth = 80,
         dividerWidth = '1px',
         leftColWidth = '25%',
         leftColTitle = '',
         rowHeight = '40px',
-        rightColWidth = '75%'
+        rightColWidth = '75%',
+        emptySlots = []
     } = {}) {
         this.state = state;
         this.header = header;
@@ -32,6 +33,7 @@ export class GanttTimeCalendar {
         this.rightColWidth = rightColWidth;
         this.dividerWidth = dividerWidth;
         this.rightColScrollWidth = 0;
+        this.emptySlots = this.spreadEmptySlots(emptySlots);
 
         this.render = this.render.bind(this);
         this.loop = main(this.state, this.render, {
@@ -52,10 +54,10 @@ export class GanttTimeCalendar {
     renderHeader() {
         let ths = [];
         let cols = [];
-        let colWidth = isNaN(+this.colWidth) ? +this.colWidth.split('px')[0] : this.colWidth;
+        let colWidth = this.colWidth;
         for (let i = this.startTime; i <= this.endTime; i++) {
             this.rightColScrollWidth += colWidth;
-            cols.push(h('col', {style: {width: this.colWidth}}));
+            cols.push(h('col', {style: {width: colWidth + 'px'}}));
             ths.push(h('th.head', this.header(i), i));
         }
 
@@ -71,7 +73,7 @@ export class GanttTimeCalendar {
 
     renderLeftColumn() {
         let trs = [];
-        let resources = this.state.resources;
+        let resources = this.state;
         for (let i in resources) {
             if (resources.hasOwnProperty(i)) {
                 trs.push(h('tr.res-row', [
@@ -88,28 +90,72 @@ export class GanttTimeCalendar {
         ]);
     }
 
+    findPosition(time, timeToPositionMap) {
+        if (timeToPositionMap[time]) {
+            return timeToPositionMap[time];
+        }
+        const hour = time.split(':')[0] + ':00';
+        const minute = parseInt(time.split(':')[1]);
+        const tempPosition = timeToPositionMap[hour];
+        return tempPosition ? (tempPosition + ((minute/60) * this.colWidth)) : undefined;
+    }
+
+    spreadEmptySlots(slots) {
+        return slots.map(function(slot) {
+            var times = slot.split('-');
+            return {
+                startTime: times[0],
+                endTime: times[1]
+            };
+        });
+    }
+
+    matchEmptySlot(time, type) {
+        for (let slot of this.emptySlots) {
+            if (slot[type] === time) {
+                return true;
+                break;
+            }
+        }
+        return false;
+    }
+
     renderRightColumn() {
         let bgTds = [];
         let cols = [];
-        let colWidth = isNaN(+this.colWidth) ? +this.colWidth.split('px')[0] : this.colWidth;
+        let colWidth = this.colWidth;
         let startTime = this.startTime;
         let endTime = this.endTime;
-        let mapTimeToPosition = {};
+        let timeToPositionMap = {};
         let left = 0;
+        let emptySlots = this.emptySlots;
+        let emptySlotStart = false;
 
         for (let i = startTime; i <= endTime; i++) {
             for (let j = 0; j < 2; j++) {
+                const time = `${i}:${j === 1 ? '15' : '00'}`;
+
+                if (!emptySlotStart && this.matchEmptySlot(time, 'startTime')) {
+                    emptySlotStart = true;
+                }
+                else if (emptySlotStart && this.matchEmptySlot(time, 'endTime')) {
+                    emptySlotStart = false;
+                }
+
+                let klass = (j === 1 ? 'minor': 'major');
+                klass += (emptySlotStart ? ' empty': '');
+
                 cols.push(h('col', {style: {width: colWidth/2}}));
                 bgTds.push(h('td', {
-                    class: new AttributeHook(null, (j === 1 ? 'minor': 'major'))
+                    'class': new AttributeHook(null, klass)
                 }));
             }
-            mapTimeToPosition[i + ':00'] = left;
+            timeToPositionMap[i + ':00'] = left;
             left += colWidth;
         }
 
         let trs = [];
-        let resources = this.state.resources;
+        let resources = this.state;
         for (let name in resources) {
             if (resources.hasOwnProperty(name)) {
                 let events = [];
@@ -117,22 +163,8 @@ export class GanttTimeCalendar {
                     resources[name].forEach((r) => {
                         const startTime = r.start_time;
                         const endTime = r.end_time;
-                        let startPosition = mapTimeToPosition[startTime];
-                        let endPosition = mapTimeToPosition[endTime];
-
-                        if(!startPosition) {
-                            const hour = startTime.split(':')[0] + ':00';
-                            const minute = +startTime.split(':')[1];
-                            const tempStartPosition = mapTimeToPosition[hour];
-                            startPosition = tempStartPosition + ((minute/60) * colWidth);
-                        }
-
-                        if (!endPosition) {
-                            const hour = endTime.split(':')[0] + ':00';
-                            const minute = +endTime.split(':')[1];
-                            const tempEndPosition = mapTimeToPosition[hour];
-                            endPosition = tempEndPosition + ((minute/60) * colWidth);
-                        }
+                        let startPosition = this.findPosition(startTime, timeToPositionMap);
+                        let endPosition = this.findPosition(endTime, timeToPositionMap);
 
                         events.push(
                             h('a.conference', {style: {
