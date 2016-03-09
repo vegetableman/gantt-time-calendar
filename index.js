@@ -4,6 +4,7 @@ import patch from 'virtual-dom/patch';
 import createElement from 'virtual-dom/create-element';
 import main from 'main-loop';
 import AttributeHook from 'virtual-dom/virtual-hyperscript/hooks/attribute-hook'
+import uid from 'uid';
 
 export class GanttTimeCalendar {
 
@@ -19,7 +20,9 @@ export class GanttTimeCalendar {
         leftColTitle = '',
         rowHeight = '40px',
         rightColWidth = '75%',
-        emptySlots = []
+        emptySlots = [],
+        selectedSlots = [],
+        onSelect = function(){}
     } = {}) {
         this.state = state;
         this.header = header;
@@ -33,7 +36,8 @@ export class GanttTimeCalendar {
         this.rightColWidth = rightColWidth;
         this.dividerWidth = dividerWidth;
         this.rightColScrollWidth = 0;
-        this.emptySlots = this.spreadEmptySlots(emptySlots);
+        this.onSelect = onSelect;
+        this.emptySlots = this.spreadSlots(emptySlots);
 
         this.render = this.render.bind(this);
         this.loop = main(this.state, this.render, {
@@ -49,6 +53,25 @@ export class GanttTimeCalendar {
         this.state = state;
         this.rightColScrollWidth = 0;
         this.loop.update(state);
+    }
+
+    select(slot) {
+        let times = slot.split('-');
+        let startTime = times[0];
+        let endTime = times[1];
+        for (let slot of this.emptySlots) {
+            console.log(slot);
+            if (slot['startTime'] === startTime && slot['endTime'] === endTime) {
+                document.querySelectorAll('td.selected').forEach((node) => {
+                    node.classList.remove('selected');
+                });
+                var nodes = document.querySelectorAll(`[data-empty-id="${slot['id']}"]`);
+                nodes.forEach((node) => {
+                    node.classList.add('selected');
+                });
+                break;
+            }
+        }
     }
 
     renderHeader() {
@@ -100,20 +123,30 @@ export class GanttTimeCalendar {
         return tempPosition ? (tempPosition + ((minute/60) * this.colWidth)) : undefined;
     }
 
-    spreadEmptySlots(slots) {
+    spreadSlots(slots) {
         return slots.map(function(slot) {
             var times = slot.split('-');
             return {
+                id: uid(),
                 startTime: times[0],
                 endTime: times[1]
             };
         });
     }
 
+    getEmptySlot(id) {
+        for (let slot of this.emptySlots) {
+            if (slot['id'] === id) {
+                return slot;
+                break;
+            }
+        }
+    }
+
     matchEmptySlot(time, type) {
         for (let slot of this.emptySlots) {
             if (slot[type] === time) {
-                return true;
+                return slot['id'];
                 break;
             }
         }
@@ -130,25 +163,76 @@ export class GanttTimeCalendar {
         let left = 0;
         let emptySlots = this.emptySlots;
         let emptySlotStart = false;
+        let self = this;
 
         for (let i = startTime; i <= endTime; i++) {
-            for (let j = 0; j < 2; j++) {
-                const time = `${i}:${j === 1 ? '15' : '00'}`;
+            let minutes = 0;
+            for (let j = 0; j < 4; j++) {
+                const time = `${i}:${j === 0 ? '00' : minutes}`;
+                minutes += 15;
 
-                if (!emptySlotStart && this.matchEmptySlot(time, 'startTime')) {
-                    emptySlotStart = true;
+                let matchId;
+                if (!emptySlotStart && (matchId = this.matchEmptySlot(time, 'startTime'))) {
+                    emptySlotStart = matchId;
                 }
                 else if (emptySlotStart && this.matchEmptySlot(time, 'endTime')) {
                     emptySlotStart = false;
                 }
 
-                let klass = (j === 1 ? 'minor': 'major');
+                let emptyMarker = {}
+                if (emptySlotStart) {
+                    class EmptyNodeHook {
+                        hook(node, propertyName, previousValue) {
+                            node.addEventListener('mouseover', (e) => {
+                                var nodes = document.querySelectorAll(`[data-empty-id="${e.target.dataset.emptyId}"]`);
+                                nodes.forEach((node) => {
+                                    if (!node.classList.contains('hover'))
+                                        node.classList.add('hover');
+                                });
+                            });
+                            node.addEventListener('mouseleave', (e) => {
+                                var nodes = document.querySelectorAll(`[data-empty-id="${e.target.dataset.emptyId}"]`);
+                                nodes.forEach((node) => {
+                                    node.classList.remove('hover');
+                                });
+                            });
+                            node.addEventListener('click', (e) => {
+                                document.querySelectorAll('td.selected').forEach((node) => {
+                                    node.classList.remove('selected');
+                                });
+                                var emptySlotId = e.target.dataset.emptyId;
+                                var nodes = document.querySelectorAll(`[data-empty-id="${emptySlotId}"]`);
+                                nodes.forEach((node) => {
+                                    node.classList.add('selected');
+                                });
+                                self.onSelect(self.getEmptySlot(emptySlotId));
+                            });
+                        }
+                    }
+
+                    emptyMarker = {
+                        'data-empty-id': new AttributeHook(null, emptySlotStart),
+                        'hook': new EmptyNodeHook()
+                    };
+                }
+
+                let klass = '';
+                if (j === 2) {
+                    klass += 'minor';
+                }
+                else if (j === 0) {
+                    klass += 'major';
+                }
+                else {
+                    klass += 'quarter';
+                }
                 klass += (emptySlotStart ? ' empty': '');
 
-                cols.push(h('col', {style: {width: colWidth/2}}));
-                bgTds.push(h('td', {
-                    'class': new AttributeHook(null, klass)
-                }));
+                cols.push(h('col', {style: {width: colWidth/4}}));
+                bgTds.push(h('td', Object.assign({
+                    'class': new AttributeHook(null, klass),
+                    'data-time': new AttributeHook(null, time)
+                }, emptyMarker)));
             }
             timeToPositionMap[i + ':00'] = left;
             left += colWidth;
@@ -231,16 +315,19 @@ export class GanttTimeCalendar {
 
     render() {
         let tableHeader = this.renderHeader.call(this);
+        let self = this;
 
-        let HeaderHook = function(){};
-        HeaderHook.prototype.hook = function(node, propertyName, previousValue) {
-            this.headerScrollEl = node;
-        }.bind(this);
+        class HeaderHook {
+            hook(node, propertyName, previousValue) {
+                self.headerScrollEl = node;
+            }
+        }
 
-        let BodyHook = function(){};
-        BodyHook.prototype.hook = function(node, propertyName, previousValue) {
-            this.bodyScrollEl = node;
-        }.bind(this);
+        class BodyHook {
+            hook(node, propertyName, previousValue) {
+                self.bodyScrollEl = node;
+            }
+        }
 
         return h(
             'table', [
@@ -249,9 +336,9 @@ export class GanttTimeCalendar {
                         h('td.header.left-header', {style: {width: this.leftColWidth}}, this.leftColTitle),
                         h('td.divider', {style: {width: this.dividerWidth}}),
                         h('td.header.right-header', {style: {width: this.rightColWidth}}, [
-                            this.attachHorizontalScroll(tableHeader, 'no-scroll', new HeaderHook(), function(e) {
+                            this.attachHorizontalScroll(tableHeader, 'no-scroll', new HeaderHook(), (e) => {
                                 this.bodyScrollEl.scrollLeft = e.target.scrollLeft;
-                            }.bind(this))
+                            })
                         ])
                     ])
                 ]),
@@ -260,9 +347,9 @@ export class GanttTimeCalendar {
                         h('td', this.renderLeftColumn()),
                         h('td.divider', {style: {width: this.dividerWidth}}),
                         h('td', {style: {width: this.rightColWidth}}, [
-                            this.attachHorizontalScroll(this.renderRightColumn(), null, new BodyHook(), function(e) {
+                            this.attachHorizontalScroll(this.renderRightColumn(), null, new BodyHook(), (e) => {
                                 this.headerScrollEl.scrollLeft = e.target.scrollLeft;
-                            }.bind(this))
+                            })
                         ])
                     ])
                 ])

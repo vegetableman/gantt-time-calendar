@@ -86,8 +86,22 @@
             border-style: dotted;
             border-right-width: 0px;
             border-width: 0 1px;
+            border-right: 0;
+        }
+        .quarter {
+            border-width: 0 1px;
+            border-style: solid;
+            border-right-width: 0;
+            border-left: 0;
+        }
+        td.empty.selected {
+            background: rgba(70, 130, 180, 0.58);
+        }
+        td.empty.hover {
+            background: rgba(70, 130, 180, 0.58);
         }
         .empty {
+            cursor: pointer;
             background: rgba(70, 130, 180, 0.33);
         }
         .head {

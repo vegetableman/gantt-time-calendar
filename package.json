@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "main-loop": "^3.2.0",
+    "uid": "0.0.2",
     "virtual-dom": "^2.1.1"
   },
   "devDependencies": {

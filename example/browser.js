@@ -30,10 +30,15 @@ var calendar = new GanttTimeCalendar(resources,
 			'14:15-16:00',
 			'17:15-24:00'
 		],
+		onSelect: function(slot) {
+			console.log(slot);
+		},
 		leftColTitle: 'Participants',
 		target: document.getElementsByClassName('calendar')[0]
 	}
 );
+
+calendar.select('14:15-16:00');
 
 window.onSearch = function(e) {
 	var value = e.value;
