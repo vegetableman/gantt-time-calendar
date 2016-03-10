@@ -4,7 +4,8 @@
   "description": "Gantt-like Time Calendar",
   "main": "index.js",
   "scripts": {
-    "start": "budo example/browser.js:bundle.js --live  --dir example --verbose -- -t babelify | garnish"
+    "start": "budo example/browser.js:bundle.js --live  --dir example --verbose -- -t babelify | garnish",
+    "build": "browserify index.js > dist/index.js -t babelify"
   },
   "author": "vegetableman <vegetablebot@gmail.com>",
   "license": "ISC",

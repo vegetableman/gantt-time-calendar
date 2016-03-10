@@ -357,3 +357,5 @@ export class GanttTimeCalendar {
         );
     }
 }
+
+window.GanttTimeCalendar = GanttTimeCalendar;
